@@ -16,12 +16,12 @@ PluginComponent {
     // Steam background replay, from shader_log.txt.
     property bool replaying: false
     property string gameName: ""
-    property int steamPercent: 0
     property real replayDone: 0
     property real replayLeft: 0
     property int logAge: 0
     // Steam's own percent barely moves, so progress comes from its two counters.
     readonly property real replayPercent: replayDone + replayLeft > 0 ? replayDone / (replayDone + replayLeft) * 100 : 0
+    readonly property string percentText: `${Math.floor(replayPercent)}%`
     // [{t, left}] from log timestamps, for the ETA.
     property var samples: []
     property real etaSeconds: -1
@@ -48,10 +48,12 @@ PluginComponent {
     onActiveChanged: setVisibilityOverride(active)
     Component.onCompleted: setVisibilityOverride(active)
 
+    // Width of the current digit count in zeros, the widest digit: no gap after
+    // short values, and no jitter while the digits change within that count.
     TextMetrics {
         id: pctMetrics
         font.pixelSize: root.pillFont
-        text: "100%"
+        text: root.percentText.replace(/\d/g, "0")
     }
 
     function fmtEta(sec) {
@@ -113,7 +115,6 @@ PluginComponent {
 
         root.replaying = replay !== null && parseInt(replay[5]) < root.staleSeconds
         if (replay) {
-            root.steamPercent = parseInt(replay[2])
             root.replayDone = parseFloat(replay[3])
             root.replayLeft = parseFloat(replay[4])
             root.logAge = parseInt(replay[5])
@@ -180,7 +181,7 @@ PluginComponent {
                 StyledText {
                     width: pctMetrics.width
                     horizontalAlignment: Text.AlignLeft
-                    text: `${Math.floor(root.replayPercent)}%`
+                    text: root.percentText
                     font.pixelSize: root.pillFont
                     color: Theme.surfaceText
                     anchors.verticalCenter: parent.verticalCenter
@@ -232,7 +233,7 @@ PluginComponent {
                     StyledText {
                         visible: root.replaying
                         width: parent.width
-                        text: `${root.fmtCount(root.replayDone)} compiled, ${root.fmtCount(root.replayLeft)} left. ${root.etaSeconds >= 0 ? "About " + root.fmtEta(root.etaSeconds) + " to go at the current pace." : "Measuring pace..."}`
+                        text: `${root.percentText} done: ${root.fmtCount(root.replayDone)} compiled, ${root.fmtCount(root.replayLeft)} left. ${root.etaSeconds >= 0 ? "About " + root.fmtEta(root.etaSeconds) + " to go at the current pace." : "Measuring pace..."}`
                         font.pixelSize: Theme.fontSizeSmall - 1
                         color: Theme.surfaceVariantText
                         wrapMode: Text.WordWrap
@@ -241,7 +242,7 @@ PluginComponent {
                     StyledText {
                         visible: root.replaying
                         width: parent.width
-                        text: `Counts from Steam's shader log, updated ${root.logAge} s ago. Steam's own figure says ${root.steamPercent}%, which barely moves.`
+                        text: `Counts from Steam's shader log, updated ${root.logAge} s ago`
                         font.pixelSize: Theme.fontSizeSmall - 1
                         color: Theme.surfaceVariantText
                         opacity: 0.7
