@@ -1,5 +1,9 @@
 # Changelog
 
+### 1.1.3: 2026-10-25
+
+* Fix ETA vanishing when the remaining count ticks up
+
 ### 1.1.2: 2026-10-25
 
 * Move ETA from pill to popout

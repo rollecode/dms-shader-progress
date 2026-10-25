@@ -22,7 +22,7 @@ PluginComponent {
     // Steam's own percent barely moves, so progress comes from its two counters.
     readonly property real replayPercent: replayDone + replayLeft > 0 ? replayDone / (replayDone + replayLeft) * 100 : 0
     readonly property string percentText: `${Math.floor(replayPercent)}%`
-    // [{t, left}] from log timestamps, for the ETA.
+    // [{t, done, left}] from log timestamps, for the ETA.
     property var samples: []
     property real etaSeconds: -1
 
@@ -62,13 +62,14 @@ PluginComponent {
         return `${Math.floor(m / 60)}h ${m % 60}m`
     }
 
-    function updateEta(t, left) {
+    function updateEta(t, done, left) {
         let s = root.samples
-        // A new replay run starts its counters over.
-        if (s.length > 0 && left > s[s.length - 1].left)
+        // A new replay run starts the compiled count over; the remaining count
+        // itself can tick up a little within a run.
+        if (s.length > 0 && done < s[s.length - 1].done)
             s = []
         if (s.length === 0 || s[s.length - 1].t !== t)
-            s = s.concat([{ t: t, left: left }])
+            s = s.concat([{ t: t, done: done, left: left }])
         s = s.filter(x => t - x.t <= root.etaWindowSeconds)
         root.samples = s
 
@@ -120,7 +121,7 @@ PluginComponent {
             root.logAge = parseInt(replay[5])
             root.gameName = replay[6]
             if (replay.length >= 8)
-                root.updateEta(parseInt(replay[7]), root.replayLeft)
+                root.updateEta(parseInt(replay[7]), root.replayDone, root.replayLeft)
         } else {
             root.samples = []
             root.etaSeconds = -1
