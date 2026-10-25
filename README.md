@@ -9,9 +9,9 @@ Sibling of [GPU Monitor](https://github.com/rollecode/dms-gpu-monitor), [VRAM Mo
 ## What it does
 
 - Compact bar pill: icon, optional label, animated progress bar and percentage
-- While Steam processes Vulkan shaders in the background, shows progress from the compiled and remaining counts in its shader log, plus an estimate of the time left
+- While Steam processes Vulkan shaders in the background, shows progress from the compiled and remaining counts in its shader log
 - Steam's own percentage barely moves during a long run, so the widget does not use it
-- The time left comes from how fast the remaining count fell over the last ten minutes, and shows after the first minute
+- Click the pill for an estimate of the time left, from how fast the remaining count fell over the last ten minutes
 - While a game running through DXVK compiles shaders, shows how much CPU the compiler threads use instead, in orange: the game stutters while this is high
 - Real CPU use from the threads' CPU time between polls, not a lifetime average
 - Hides itself when Steam is not processing and no game is compiling

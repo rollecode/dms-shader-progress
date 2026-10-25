@@ -1,5 +1,9 @@
 # Changelog
 
+### 1.1.2: 2026-10-25
+
+* Move ETA from pill to popout
+
 ### 1.1.1: 2026-10-25
 
 * Fix gap after percent and popout mismatch

@@ -187,13 +187,6 @@ PluginComponent {
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
-                StyledText {
-                    visible: root.etaSeconds >= 0
-                    text: root.fmtEta(root.etaSeconds)
-                    font.pixelSize: root.pillFont
-                    color: Theme.surfaceVariantText
-                    anchors.verticalCenter: parent.verticalCenter
-                }
             }
 
             StyledText {
