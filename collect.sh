@@ -1,6 +1,6 @@
 #!/bin/sh
 # Emits tab-separated lines, both optional:
-# R  APPID  PERCENT  DONE  COUNT  AGE_S  NAME   Steam background shader replay
+# R  APPID  PERCENT  DONE  LEFT  AGE_S  NAME  EPOCH   Steam background shader replay
 # C  TICKS  HZ  THREADS                         CPU ticks of DXVK compiler threads
 
 STEAM="$HOME/.local/share/Steam"
@@ -20,12 +20,13 @@ if pgrep -f 'ubuntu12_64/fossilize_replay' >/dev/null && [ -f "$LOG" ]; then
   line=$(tail -n 50 "$LOG" | grep 'Still replaying' | tail -1)
   fields=$(printf '%s\n' "$line" | sed -n 's/^\[\([^]]*\)\] Still replaying \([0-9]*\) (\([0-9]*\)%, \([0-9]*\)\/\([0-9]*\)).*/\1\t\2\t\3\t\4\t\5/p')
   if [ -n "$fields" ]; then
-    IFS="$TAB" read -r ts app pct done count <<END
+    IFS="$TAB" read -r ts app pct done left <<END
 $fields
 END
-    age=$(( $(date +%s) - $(date -d "$ts" +%s) ))
+    epoch=$(date -d "$ts" +%s)
+    age=$(( $(date +%s) - epoch ))
     name=$(game_name "$app")
-    printf 'R\t%s\t%s\t%s\t%s\t%s\t%s\n' "$app" "$pct" "$done" "$count" "$age" "${name:-App $app}"
+    printf 'R\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$app" "$pct" "$done" "$left" "$age" "${name:-App $app}" "$epoch"
   fi
 fi
 

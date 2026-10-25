@@ -18,8 +18,13 @@ PluginComponent {
     property string gameName: ""
     property int steamPercent: 0
     property real replayDone: 0
-    property real replayCount: 0
+    property real replayLeft: 0
     property int logAge: 0
+    // Steam's own percent barely moves, so progress comes from its two counters.
+    readonly property real replayPercent: replayDone + replayLeft > 0 ? replayDone / (replayDone + replayLeft) * 100 : 0
+    // [{t, left}] from log timestamps, for the ETA.
+    property var samples: []
+    property real etaSeconds: -1
 
     // In-game DXVK compiling, from compiler thread CPU time between polls.
     property real lastTicks: -1
@@ -31,6 +36,9 @@ PluginComponent {
     readonly property int staleSeconds: 60
     // Below half a core the compiler threads are idle chatter, not a compile.
     readonly property real compileThreshold: 50
+    // ETA uses the last ten minutes, and needs a minute of data before it shows.
+    readonly property int etaWindowSeconds: 600
+    readonly property int etaMinSpanSeconds: 60
 
     readonly property bool compiling: compileCpu >= compileThreshold
     readonly property bool active: replaying || compiling
@@ -44,6 +52,28 @@ PluginComponent {
         id: pctMetrics
         font.pixelSize: root.pillFont
         text: "100%"
+    }
+
+    function fmtEta(sec) {
+        const m = Math.round(sec / 60)
+        if (m < 60) return `${Math.max(m, 1)}m`
+        return `${Math.floor(m / 60)}h ${m % 60}m`
+    }
+
+    function updateEta(t, left) {
+        let s = root.samples
+        // A new replay run starts its counters over.
+        if (s.length > 0 && left > s[s.length - 1].left)
+            s = []
+        if (s.length === 0 || s[s.length - 1].t !== t)
+            s = s.concat([{ t: t, left: left }])
+        s = s.filter(x => t - x.t <= root.etaWindowSeconds)
+        root.samples = s
+
+        const first = s[0]
+        const span = t - first.t
+        const rate = span > 0 ? (first.left - left) / span : 0
+        root.etaSeconds = span >= root.etaMinSpanSeconds && rate > 0 ? left / rate : -1
     }
 
     function fmtCount(n) {
@@ -85,9 +115,14 @@ PluginComponent {
         if (replay) {
             root.steamPercent = parseInt(replay[2])
             root.replayDone = parseFloat(replay[3])
-            root.replayCount = parseFloat(replay[4])
+            root.replayLeft = parseFloat(replay[4])
             root.logAge = parseInt(replay[5])
             root.gameName = replay[6]
+            if (replay.length >= 8)
+                root.updateEta(parseInt(replay[7]), root.replayLeft)
+        } else {
+            root.samples = []
+            root.etaSeconds = -1
         }
 
         const now = Date.now()
@@ -134,7 +169,7 @@ PluginComponent {
                     anchors.verticalCenter: parent.verticalCenter
 
                     Rectangle {
-                        width: parent.width * Math.min(root.steamPercent, 100) / 100
+                        width: parent.width * Math.min(root.replayPercent, 100) / 100
                         height: parent.height
                         radius: parent.radius
                         color: Theme.primary
@@ -145,9 +180,17 @@ PluginComponent {
                 StyledText {
                     width: pctMetrics.width
                     horizontalAlignment: Text.AlignLeft
-                    text: `${root.steamPercent}%`
+                    text: `${Math.floor(root.replayPercent)}%`
                     font.pixelSize: root.pillFont
                     color: Theme.surfaceText
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                StyledText {
+                    visible: root.etaSeconds >= 0
+                    text: root.fmtEta(root.etaSeconds)
+                    font.pixelSize: root.pillFont
+                    color: Theme.surfaceVariantText
                     anchors.verticalCenter: parent.verticalCenter
                 }
             }
@@ -189,9 +232,19 @@ PluginComponent {
                     StyledText {
                         visible: root.replaying
                         width: parent.width
-                        text: `Steam reports ${root.steamPercent}%, ${root.fmtCount(root.replayDone)} / ${root.fmtCount(root.replayCount)}, updated ${root.logAge} s ago`
+                        text: `${root.fmtCount(root.replayDone)} compiled, ${root.fmtCount(root.replayLeft)} left. ${root.etaSeconds >= 0 ? "About " + root.fmtEta(root.etaSeconds) + " to go at the current pace." : "Measuring pace..."}`
                         font.pixelSize: Theme.fontSizeSmall - 1
                         color: Theme.surfaceVariantText
+                        wrapMode: Text.WordWrap
+                    }
+
+                    StyledText {
+                        visible: root.replaying
+                        width: parent.width
+                        text: `Counts from Steam's shader log, updated ${root.logAge} s ago. Steam's own figure says ${root.steamPercent}%, which barely moves.`
+                        font.pixelSize: Theme.fontSizeSmall - 1
+                        color: Theme.surfaceVariantText
+                        opacity: 0.7
                         wrapMode: Text.WordWrap
                     }
 
