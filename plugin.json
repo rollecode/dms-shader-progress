@@ -1,0 +1,18 @@
+{
+  "id": "shaderProgress",
+  "name": "Shader Progress",
+  "description": "Steam's background Vulkan shader processing and in-game DXVK shader compiling in the DankBar. Hidden while nothing is compiling.",
+  "version": "1.0.0",
+  "author": "Rolle Laukkarinen",
+  "icon": "texture",
+  "type": "widget",
+  "capabilities": [
+    "dankbar-widget"
+  ],
+  "component": "./ShaderWidget.qml",
+  "settings": "./ShaderSettings.qml",
+  "permissions": [
+    "settings_read",
+    "settings_write"
+  ]
+}
